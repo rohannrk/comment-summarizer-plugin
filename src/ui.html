@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root {
+        --bg: var(--figma-color-bg, #fff);
+        --bg-secondary: var(--figma-color-bg-secondary, #f5f5f5);
+        --text: var(--figma-color-text, #1a1a1a);
+        --text-secondary: var(--figma-color-text-secondary, #6b6b6b);
+        --border: var(--figma-color-border, #e6e6e6);
+        --accent: var(--figma-color-bg-brand, #0d99ff);
+        --accent-text: var(--figma-color-text-onbrand, #fff);
+        --danger: var(--figma-color-text-danger, #d4380d);
+        --danger-bg: var(--figma-color-bg-danger-tertiary, #fff1f0);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, -apple-system, system-ui, sans-serif;
+        font-size: 12px;
+        color: var(--text);
+        background: var(--bg);
+      }
+      .wrap { padding: 12px; }
+      h2 { font-size: 12px; margin: 0 0 8px; }
+      label { display: block; font-weight: 600; margin: 10px 0 4px; }
+      .hint { color: var(--text-secondary); font-weight: 400; font-size: 11px; }
+      input, select {
+        width: 100%;
+        padding: 7px 8px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 12px;
+      }
+      input:focus, select:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+      .row { display: flex; gap: 8px; }
+      .row > * { flex: 1; }
+      button {
+        border: none;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .primary { background: var(--accent); color: var(--accent-text); width: 100%; margin-top: 12px; }
+      .primary:disabled { opacity: 0.5; cursor: not-allowed; }
+      .ghost { background: var(--bg-secondary); color: var(--text); }
+      .scope {
+        background: var(--bg-secondary);
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 4px;
+        color: var(--text-secondary);
+      }
+      .scope b { color: var(--text); }
+      details { margin-top: 8px; border-top: 1px solid var(--border); padding-top: 4px; }
+      summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+      .error {
+        background: var(--danger-bg);
+        color: var(--danger);
+        padding: 8px 10px;
+        border-radius: 6px;
+        margin-top: 10px;
+        white-space: pre-wrap;
+      }
+      .result {
+        margin-top: 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px 12px;
+        line-height: 1.5;
+      }
+      .result h2 { font-size: 13px; margin: 14px 0 6px; }
+      .result h2:first-child { margin-top: 0; }
+      .result ul { padding-left: 18px; margin: 4px 0; }
+      .result li { margin: 2px 0; }
+      .result p { margin: 6px 0; }
+      .toolbar { display: flex; justify-content: flex-end; margin-top: 10px; gap: 8px; }
+      .spinner {
+        display: inline-block; width: 14px; height: 14px; vertical-align: middle;
+        border: 2px solid var(--border); border-top-color: var(--accent);
+        border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 6px;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .hidden { display: none; }
+      .muted { color: var(--text-secondary); }
+      .ok-text { color: var(--figma-color-text-success, #0f7b0f); white-space: pre-wrap; margin-top: 8px; }
+      #testResult { font-size: 11px; }
+      .preview {
+        background: var(--bg-secondary);
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-top: 10px;
+        color: var(--text-secondary);
+      }
+      .preview b { color: var(--text); }
+      .check { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-weight: 500; }
+      .check input { width: auto; }
+      .result li.task { list-style: none; margin-left: -14px; display: flex; gap: 6px; align-items: baseline; }
+      .result li.task input { margin: 0; }
+      /* structured card layout */
+      .sec { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+      .sec:first-child { padding-top: 2px; }
+      .sec:last-child { border-bottom: none; padding-bottom: 2px; }
+      .sec-ic {
+        width: 30px; height: 30px; border-radius: 50%; flex: none;
+        display: flex; align-items: center; justify-content: center; color: #fff;
+      }
+      .ic-summary { background: #1E90FF; }
+      .ic-people { background: #7C6CF0; }
+      .ic-actions { background: #22C55E; }
+      .ic-other { background: #9aa5b1; }
+      .sec-main { flex: 1; min-width: 0; }
+      .sec-main h3 { font-size: 14px; font-weight: 700; margin: 4px 0 8px; }
+      .sec-main p { margin: 4px 0; line-height: 1.5; }
+      .person { display: flex; align-items: center; gap: 8px; margin: 7px 0; }
+      .avatar {
+        width: 26px; height: 26px; border-radius: 50%; flex: none; color: #fff;
+        font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+      }
+      .pname { font-weight: 700; }
+      .pdash { color: var(--text-secondary); }
+      .pphrase { color: var(--text-secondary); }
+      .task { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+      .task .box {
+        width: 20px; height: 20px; border-radius: 6px; flex: none;
+        border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; color: #fff;
+      }
+      .task .box.checked { background: #22C55E; border-color: #22C55E; }
+      .task.done .tlabel { text-decoration: line-through; color: var(--text-secondary); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div id="scope" class="scope">Reading selection…</div>
+
+      <label class="row" style="align-items:center;justify-content:space-between;font-weight:600">
+        <span>Figma file URL <span class="hint">(this file)</span></span>
+      </label>
+      <input id="fileUrl" type="text" placeholder="https://www.figma.com/design/XXXX/..." />
+
+      <details id="config">
+        <summary>Credentials &amp; model</summary>
+
+        <label>Figma personal access token <span class="hint">(needs file_comments:read)</span></label>
+        <input id="pat" type="password" placeholder="figd_…" />
+
+        <label>LLM provider</label>
+        <select id="provider">
+          <option value="gemini">Gemini</option>
+          <option value="local">Local / OpenAI-compatible</option>
+        </select>
+
+        <div id="geminiFields">
+          <label>Gemini API key</label>
+          <input id="geminiKey" type="password" placeholder="AIza…" />
+          <label>Model</label>
+          <input id="geminiModel" type="text" placeholder="gemini-2.5-pro" />
+        </div>
+
+        <div id="localFields" class="hidden">
+          <label>Base URL</label>
+          <input id="localUrl" type="text" placeholder="http://localhost:11434" />
+          <label>Model</label>
+          <input id="localModel" type="text" placeholder="llama3.1" />
+          <label>API key <span class="hint">(optional)</span></label>
+          <input id="localKey" type="password" placeholder="leave blank if not needed" />
+        </div>
+
+        <div class="toolbar">
+          <button id="test" class="ghost">Test connection</button>
+          <button id="save" class="ghost">Save credentials</button>
+        </div>
+        <div id="testResult" class="hidden"></div>
+        <p class="hint muted">Your token &amp; LLM key are stored locally in Figma (clientStorage). Comment text is sent to your chosen LLM for summarization — review its provider's data policy.</p>
+      </details>
+
+      <label class="check">
+        <input id="excludeResolved" type="checkbox" />
+        Ignore resolved threads
+      </label>
+
+      <button id="run" class="primary" disabled>Scan comments</button>
+      <div id="preview" class="preview hidden"></div>
+
+      <div id="error" class="error hidden"></div>
+      <div id="status" class="muted hidden" style="margin-top:10px"></div>
+
+      <div id="result" class="result hidden"></div>
+      <div id="resultToolbar" class="toolbar hidden">
+        <button id="insert" class="ghost">Insert into Figma</button>
+        <button id="copy" class="ghost">Copy</button>
+      </div>
+    </div>
+    <!-- SCRIPT -->
+  </body>
+</html>

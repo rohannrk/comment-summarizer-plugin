@@ -1,0 +1,77 @@
+<svg width="1920" height="960" viewBox="0 0 1920 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1920" y2="960" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EAF3FF"/>
+      <stop offset="1" stop-color="#F7FAFF"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="30" flood-color="#0B6FE0" flood-opacity="0.16"/>
+    </filter>
+    <font-face font-family="Inter"/>
+  </defs>
+
+  <rect width="1920" height="960" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="160" y="170" font-family="Inter, Arial, sans-serif" font-size="64" font-weight="700" fill="#0A2540">Comment Summarizer</text>
+  <text x="160" y="232" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="400" fill="#516079">Turn Figma comments into a clear recap and action list.</text>
+
+  <!-- LEFT: overlapping comment pins -->
+  <g transform="translate(250 430)">
+    <g transform="translate(0 0)">
+      <path d="M0 24 a24 24 0 0 1 24 -24 H300 a24 24 0 0 1 24 24 V150 a24 24 0 0 1 -24 24 H120 l-34 40 v-40 H24 a24 24 0 0 1 -24 -24 Z" fill="#FFFFFF" filter="url(#shadow)"/>
+      <circle cx="56" cy="56" r="20" fill="#FFB020"/>
+      <rect x="92" y="44" width="200" height="14" rx="7" fill="#D7E2F0"/>
+      <rect x="92" y="74" width="150" height="14" rx="7" fill="#E4ECF6"/>
+      <rect x="92" y="104" width="180" height="14" rx="7" fill="#E4ECF6"/>
+    </g>
+    <g transform="translate(120 200)">
+      <path d="M0 24 a24 24 0 0 1 24 -24 H300 a24 24 0 0 1 24 24 V150 a24 24 0 0 1 -24 24 H120 l-34 40 v-40 H24 a24 24 0 0 1 -24 -24 Z" fill="#FFFFFF" filter="url(#shadow)"/>
+      <circle cx="56" cy="56" r="20" fill="#1E90FF"/>
+      <rect x="92" y="44" width="170" height="14" rx="7" fill="#D7E2F0"/>
+      <rect x="92" y="74" width="200" height="14" rx="7" fill="#E4ECF6"/>
+      <rect x="92" y="104" width="120" height="14" rx="7" fill="#E4ECF6"/>
+    </g>
+    <g transform="translate(20 410)">
+      <path d="M0 24 a24 24 0 0 1 24 -24 H300 a24 24 0 0 1 24 24 V150 a24 24 0 0 1 -24 24 H120 l-34 40 v-40 H24 a24 24 0 0 1 -24 -24 Z" fill="#FFFFFF" filter="url(#shadow)"/>
+      <circle cx="56" cy="56" r="20" fill="#22C55E"/>
+      <rect x="92" y="44" width="190" height="14" rx="7" fill="#D7E2F0"/>
+      <rect x="92" y="74" width="140" height="14" rx="7" fill="#E4ECF6"/>
+      <rect x="92" y="104" width="200" height="14" rx="7" fill="#E4ECF6"/>
+    </g>
+  </g>
+
+  <!-- arrow -->
+  <g transform="translate(845 560)" stroke="#1E90FF" stroke-width="8" stroke-linecap="round" fill="none">
+    <line x1="0" y1="0" x2="90" y2="0"/>
+    <path d="M70 -18 L92 0 L70 18"/>
+  </g>
+
+  <!-- RIGHT: result card -->
+  <g transform="translate(1010 320)">
+    <rect width="700" height="460" rx="28" fill="#FFFFFF" filter="url(#shadow)"/>
+
+    <!-- Summary -->
+    <rect x="48" y="48" width="22" height="22" rx="6" fill="#1E90FF"/>
+    <text x="84" y="66" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700" fill="#0A2540">Summary</text>
+    <rect x="48" y="92" width="604" height="12" rx="6" fill="#E4ECF6"/>
+    <rect x="48" y="116" width="540" height="12" rx="6" fill="#E4ECF6"/>
+
+    <!-- People involved -->
+    <rect x="48" y="166" width="22" height="22" rx="6" fill="#FFB020"/>
+    <text x="84" y="184" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700" fill="#0A2540">People involved</text>
+    <circle cx="58" cy="222" r="10" fill="#9EC9FF"/>
+    <rect x="80" y="216" width="220" height="12" rx="6" fill="#E4ECF6"/>
+    <circle cx="58" cy="252" r="10" fill="#9EC9FF"/>
+    <rect x="80" y="246" width="180" height="12" rx="6" fill="#E4ECF6"/>
+
+    <!-- Action items -->
+    <rect x="48" y="296" width="22" height="22" rx="6" fill="#22C55E"/>
+    <text x="84" y="314" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700" fill="#0A2540">Action items</text>
+    <rect x="48" y="346" width="24" height="24" rx="6" fill="none" stroke="#22C55E" stroke-width="3"/>
+    <path d="M54 358 l6 6 l10 -12" stroke="#22C55E" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="84" y="350" width="420" height="12" rx="6" fill="#E4ECF6"/>
+    <rect x="48" y="390" width="24" height="24" rx="6" fill="none" stroke="#C3CEDD" stroke-width="3"/>
+    <rect x="84" y="394" width="360" height="12" rx="6" fill="#E4ECF6"/>
+  </g>
+</svg>

@@ -1,0 +1,22 @@
+{
+  "name": "Comment Summarizer",
+  "id": "1649697706236952570",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": [
+      "https://api.figma.com",
+      "https://generativelanguage.googleapis.com"
+    ],
+    "devAllowedDomains": [
+      "https://api.figma.com",
+      "https://generativelanguage.googleapis.com",
+      "http://localhost:11434",
+      "http://localhost:1234"
+    ],
+    "reasoning": "Fetch file comments from Figma and send them to the user's chosen LLM (Gemini or a local/OpenAI-compatible endpoint) for summarization."
+  }
+}
