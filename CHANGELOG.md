@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project aims to follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-06-22
+
+### Added
+- FigJam support: the plugin now runs in FigJam files as well as design files
+  (`editorType` includes `figjam`). Comment fetching, scope detection, and
+  summarization are shared across both editors.
+- FigJam insert path: since FigJam has no auto-layout frames, the summary is
+  inserted as a single styled text node (bold section headings, bold names with
+  secondary-colored phrases, ☐/☑ task glyphs with strike-through for completed
+  items). Design files keep the auto-layout card.
+- `buildSummaryText`, a pure markdown-to-text/span builder shared by the FigJam
+  renderer, with unit tests.
+
 ## [0.1.0] - 2026-06-19
 
 First release, submitted to the Figma Community for review.

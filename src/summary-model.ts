@@ -103,3 +103,93 @@ export function avatarHsl(name: string): { h: number; s: number; l: number } {
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 360;
   return { h, s: 60, l: 55 };
 }
+
+// --- Plain-text rendering (used by the FigJam insert path) ---
+// FigJam has no auto-layout frames, so the structured card collapses into one
+// text node. This builds the string plus the style spans to apply to it, using
+// semantic tokens only (no Figma types) so it stays unit-testable. code.ts maps
+// the tokens onto real fonts/colors.
+
+export interface SpanStyle {
+  bold?: boolean;
+  heading?: boolean; // larger size (section titles)
+  color?: "default" | "secondary";
+  strike?: boolean;
+}
+
+export interface TextSpan extends SpanStyle {
+  start: number;
+  end: number;
+}
+
+export interface RenderedText {
+  text: string;
+  spans: TextSpan[];
+}
+
+// Mirror paragraphNode's line transform: "- "/"* " -> "• ", checkboxes -> ☐/☑.
+function plainLines(lines: string[]): string {
+  return lines
+    .map((l) =>
+      l
+        .replace(/^\s*[-*]\s+/, "• ")
+        .replace(/^•\s*\[ \]\s*/, "• ☐ ")
+        .replace(/^•\s*\[[xX]\]\s*/, "• ☑ ")
+    )
+    .join("\n")
+    .trim();
+}
+
+export function buildSummaryText(md: string): RenderedText {
+  const sections = splitSections(md);
+  const spans: TextSpan[] = [];
+  let text = "";
+  const push = (s: string, style?: SpanStyle) => {
+    const start = text.length;
+    text += s;
+    if (style) spans.push({ start, end: text.length, ...style });
+  };
+
+  for (const s of sections) {
+    if (text) push("\n\n");
+    if (s.title) push(s.title + "\n", { bold: true, heading: true });
+
+    if (s.key === "people") {
+      const bullets = listBullets(s.lines);
+      if (bullets.length) {
+        for (const b of bullets) {
+          const p = parsePerson(b);
+          push("• ");
+          push(p.name, { bold: true });
+          if (p.phrase) push(`  —  ${p.phrase}`, { color: "secondary" });
+          push("\n");
+        }
+      } else {
+        const body = plainLines(s.lines);
+        if (body) push(body + "\n");
+      }
+    } else if (s.key === "actions") {
+      const bullets = listBullets(s.lines);
+      if (bullets.length) {
+        for (const b of bullets) {
+          const t = parseTask(b);
+          push(`${t.done ? "☑" : "☐"} `);
+          push(t.label + "\n", t.done ? { color: "secondary", strike: true } : undefined);
+        }
+      } else {
+        const body = plainLines(s.lines);
+        if (body) push(body + "\n");
+      }
+    } else {
+      const body = plainLines(s.lines);
+      if (body) push(body + "\n");
+    }
+  }
+
+  // Trim trailing whitespace and clamp spans to the final length.
+  text = text.replace(/\s+$/, "");
+  const clamped = spans
+    .map((sp) => ({ ...sp, end: Math.min(sp.end, text.length) }))
+    .filter((sp) => sp.start < sp.end);
+  return { text, spans: clamped };
+}

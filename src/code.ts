@@ -11,6 +11,7 @@ import {
   parseTask,
   initials,
   avatarHsl,
+  buildSummaryText,
   type SectionKey,
 } from "./summary-model";
 
@@ -338,6 +339,42 @@ async function insertFrame(markdown: string, label: string) {
   figma.notify("Inserted summary frame");
 }
 
+// FigJam has no auto-layout frames, so render the summary as one styled text
+// node. Reuses buildSummaryText (pure) and maps its semantic spans onto fonts
+// and colors here.
+async function insertFigjam(markdown: string, label: string) {
+  const { regular, bold } = await loadFonts();
+  const { text, spans } = buildSummaryText(markdown);
+
+  const node = figma.createText();
+  node.fontName = regular;
+  node.fontSize = 13;
+  node.lineHeight = { value: 150, unit: "PERCENT" };
+  node.fills = [{ type: "SOLID", color: COL.text }];
+  node.characters = text || "(no content)";
+  node.textAutoResize = "HEIGHT";
+  node.resize(440, node.height); // fixed width so long lines wrap
+
+  const len = node.characters.length;
+  for (const sp of spans) {
+    const end = Math.min(sp.end, len);
+    if (sp.start >= end) continue;
+    if (sp.bold) node.setRangeFontName(sp.start, end, bold);
+    if (sp.heading) node.setRangeFontSize(sp.start, end, 16);
+    if (sp.color === "secondary")
+      node.setRangeFills(sp.start, end, [{ type: "SOLID", color: COL.textSecondary }]);
+    if (sp.strike) node.setRangeTextDecoration(sp.start, end, "STRIKETHROUGH");
+  }
+
+  node.name = `Summary — ${label}`;
+  const c = figma.viewport.center;
+  node.x = Math.round(c.x - node.width / 2);
+  node.y = Math.round(c.y - node.height / 2);
+  figma.currentPage.selection = [node];
+  figma.viewport.scrollAndZoomIntoView([node]);
+  figma.notify("Inserted summary");
+}
+
 figma.showUI(__html__, { width: 420, height: 640, themeColors: true });
 
 figma.ui.onmessage = async (msg: UIToMain) => {
@@ -357,9 +394,13 @@ figma.ui.onmessage = async (msg: UIToMain) => {
       break;
     case "insert-frame":
       try {
-        await insertFrame(msg.markdown, msg.label);
+        if (figma.editorType === "figjam") {
+          await insertFigjam(msg.markdown, msg.label);
+        } else {
+          await insertFrame(msg.markdown, msg.label);
+        }
       } catch (e) {
-        figma.notify(`Could not insert frame: ${String(e)}`, { error: true });
+        figma.notify(`Could not insert summary: ${String(e)}`, { error: true });
       }
       break;
   }
