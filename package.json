@@ -1,6 +1,6 @@
 {
   "name": "figma-comment-summarizer",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Figma plugin that summarizes comments on a frame, section, or page into a clean summary + action items (BYOK: Gemini or local LLM).",
   "license": "MIT",
   "scripts": {
