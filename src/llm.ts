@@ -24,9 +24,17 @@ const GEMINI_FALLBACK = [
   "gemini-2.5-flash-lite",
 ];
 
+// A screenshot to attach as visual context. Gemini-only: the local/OpenAI-compatible
+// path ignores it, since most local models aren't multimodal.
+export interface ImageInput {
+  mimeType: string;
+  base64: string; // no "data:...;base64," prefix
+}
+
 export interface SummarizeOpts {
   // Called as each model/attempt starts, so the UI can show progress.
   onProgress?: (note: string) => void;
+  images?: ImageInput[]; // one or more frames' screenshots, all attached to the same request
 }
 
 export async function summarize(
@@ -60,7 +68,7 @@ async function callGemini(
           opts.onProgress?.(
             `Summarizing with ${model}${attempt > 0 ? ` (retry ${attempt})` : ""}…`
           );
-          return geminiOnce(config.apiKey!, model, systemPrompt, userContent);
+          return geminiOnce(config.apiKey!, model, systemPrompt, userContent, opts.images);
         },
         opts
       );
@@ -82,17 +90,31 @@ async function geminiOnce(
   apiKey: string,
   model: string,
   systemPrompt: string,
-  userContent: string
+  userContent: string,
+  images?: ImageInput[]
 ): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model
   )}:generateContent`;
+  const imageParts = (images ?? []).map((image) => ({
+    inline_data: { mime_type: image.mimeType, data: image.base64 },
+  }));
+  const parts: Record<string, unknown>[] = [...imageParts, { text: userContent }];
+  // Verifiable proof this request actually included the image(s): open this
+  // plugin's dev console (Figma desktop: right-click the plugin panel ->
+  // Inspect) and look for this line before trusting the on-screen badge alone.
+  const totalKB = (images ?? []).reduce((n, img) => n + Math.round((img.base64.length * 0.75) / 1024), 0);
+  console.log(
+    `[comment-summarizer] Gemini request to ${model}: ${
+      imageParts.length > 0 ? `${imageParts.length} image(s) attached (~${totalKB}KB total)` : "NO images attached"
+    }, ${parts.length} part(s).`
+  );
   const data = await requestJson(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: "user", parts: [{ text: userContent }] }],
+      contents: [{ role: "user", parts }],
       generationConfig: { temperature: 0.2 },
     }),
   });

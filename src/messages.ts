@@ -11,6 +11,7 @@ export interface SavedConfig {
   pat?: string; // Figma personal access token
   llm?: LLMConfig;
   excludeResolved?: boolean; // skip resolved threads when summarizing
+  includeScreenshot?: boolean; // attach a screenshot of the selected frame as visual context (Gemini only)
 }
 
 export interface Rect {
@@ -29,8 +30,17 @@ export type MainToUI =
       wholePage: boolean; // true when nothing is selected (whole-page scope)
       label: string;
       count: number;
+      fileKey?: string; // this file's key, auto-detected via figma.fileKey
+      singleNode: boolean; // true when exactly one node is selected
+      selectionCount: number; // number of top-level selected nodes (0 for whole-page scope; screenshot-eligible when > 0)
     }
-  | { type: "config"; config: SavedConfig };
+  | { type: "config"; config: SavedConfig }
+  | { type: "screenshot"; images: ScreenshotImage[] }; // one PNG per exportable selected node (skips any that failed to export)
+
+export interface ScreenshotImage {
+  name: string; // the node's name, for labeling in the UI
+  dataUrl: string;
+}
 
 // UI -> Main thread
 export type UIToMain =
@@ -38,4 +48,5 @@ export type UIToMain =
   | { type: "save-config"; config: SavedConfig }
   | { type: "notify"; message: string; error?: boolean }
   | { type: "resize"; height: number }
-  | { type: "insert-frame"; markdown: string; label: string };
+  | { type: "insert-frame"; markdown: string; label: string }
+  | { type: "capture-screenshot" };

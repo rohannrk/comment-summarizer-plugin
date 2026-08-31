@@ -3,7 +3,7 @@
 //   1. Compute the set of node IDs in scope (current selection, or whole page).
 //   2. Persist / load credentials via figma.clientStorage on behalf of the UI.
 
-import type { MainToUI, UIToMain, SavedConfig, Rect } from "./messages";
+import type { MainToUI, UIToMain, SavedConfig, Rect, ScreenshotImage } from "./messages";
 import {
   splitSections,
   listBullets,
@@ -21,36 +21,54 @@ function post(msg: MainToUI) {
   figma.ui.postMessage(msg);
 }
 
+// Walk a node's descendants breadth-first, yielding to the event loop every
+// few hundred nodes so a huge subtree doesn't block Figma's UI thread while
+// it's collected (a real problem on large enterprise files with 10k+ nodes).
+async function collectDescendantIds(root: BaseNode, ids: Set<string>): Promise<void> {
+  if (!("children" in root)) return;
+  const queue: BaseNode[] = [...(root as ChildrenMixin).children];
+  let sinceYield = 0;
+  while (queue.length > 0) {
+    const node = queue.shift()!;
+    ids.add(node.id);
+    if ("children" in node) queue.push(...(node as ChildrenMixin).children);
+    if (++sinceYield >= 500) {
+      sinceYield = 0;
+      await new Promise((r) => setTimeout(r, 0));
+    }
+  }
+}
+
 // Collect the node IDs (and bounding boxes) in scope plus a readable label.
-function computeScope(): {
+async function computeScope(): Promise<{
   nodeIds: string[];
   bboxes: Rect[];
   wholePage: boolean;
   label: string;
-} {
+  singleNode: boolean;
+  selectionCount: number;
+}> {
   const ids = new Set<string>();
   const sel = figma.currentPage.selection;
 
   if (sel.length === 0) {
     // No selection -> whole current page (all coordinate-pinned comments count).
     ids.add(figma.currentPage.id);
-    for (const node of figma.currentPage.findAll(() => true)) {
-      ids.add(node.id);
-    }
+    await collectDescendantIds(figma.currentPage, ids);
     return {
       nodeIds: [...ids],
       bboxes: [],
       wholePage: true,
       label: `Page "${figma.currentPage.name}"`,
+      singleNode: false,
+      selectionCount: 0,
     };
   }
 
   const bboxes: Rect[] = [];
   for (const node of sel) {
     ids.add(node.id);
-    if ("findAll" in node) {
-      for (const child of node.findAll(() => true)) ids.add(child.id);
-    }
+    await collectDescendantIds(node, ids);
     if ("absoluteBoundingBox" in node && node.absoluteBoundingBox) {
       const b = node.absoluteBoundingBox;
       bboxes.push({ x: b.x, y: b.y, width: b.width, height: b.height });
@@ -59,10 +77,24 @@ function computeScope(): {
 
   const top = sel[0];
   const label =
-    sel.length === 1
-      ? `${prettyType(top.type)} "${top.name}"`
-      : `${sel.length} selected layers`;
-  return { nodeIds: [...ids], bboxes, wholePage: false, label };
+    sel.length === 1 ? `${prettyType(top.type)} "${top.name}"` : listLabel(sel);
+  return {
+    nodeIds: [...ids],
+    bboxes,
+    wholePage: false,
+    label,
+    singleNode: sel.length === 1,
+    selectionCount: sel.length,
+  };
+}
+
+// "Header, Footer, +2 more" style summary of a multi-selection, so the user
+// can see exactly what's in scope without expanding it themselves.
+function listLabel(sel: readonly SceneNode[]): string {
+  const maxNamed = 3;
+  const names = sel.slice(0, maxNamed).map((n) => n.name);
+  const rest = sel.length - names.length;
+  return rest > 0 ? `${names.join(", ")}, +${rest} more` : names.join(", ");
 }
 
 function prettyType(type: string): string {
@@ -82,9 +114,51 @@ function prettyType(type: string): string {
   }
 }
 
+// Guards against a slow traversal from an older selection finishing after (and
+// overwriting) the result of a newer one, when selections change in quick succession.
+let scopeGeneration = 0;
+
 async function sendScope() {
-  const { nodeIds, bboxes, wholePage, label } = computeScope();
-  post({ type: "scope", nodeIds, bboxes, wholePage, label, count: nodeIds.length });
+  const generation = ++scopeGeneration;
+  const { nodeIds, bboxes, wholePage, label, singleNode, selectionCount } = await computeScope();
+  if (generation !== scopeGeneration) return; // superseded by a later selection change
+  post({
+    type: "scope",
+    nodeIds,
+    bboxes,
+    wholePage,
+    label,
+    count: nodeIds.length,
+    fileKey: figma.fileKey,
+    singleNode,
+    selectionCount,
+  });
+}
+
+// Cap on how many frames get screenshotted at once — bounds payload size and
+// image token cost when someone selects a large batch of frames.
+const MAX_SCREENSHOTS = 6;
+
+// Export each currently-selected node as a PNG data URL for use as LLM visual
+// context. Capped at 1200px wide per image, and MAX_SCREENSHOTS nodes total.
+// Nodes that can't export (or error) are silently skipped rather than failing
+// the whole batch.
+async function captureScreenshot(): Promise<ScreenshotImage[]> {
+  const sel = figma.currentPage.selection.slice(0, MAX_SCREENSHOTS);
+  const images: ScreenshotImage[] = [];
+  for (const node of sel) {
+    if (!("exportAsync" in node)) continue;
+    try {
+      const bytes = await (node as ExportMixin).exportAsync({
+        format: "PNG",
+        constraint: { type: "WIDTH", value: 1200 },
+      });
+      images.push({ name: node.name, dataUrl: `data:image/png;base64,${figma.base64Encode(bytes)}` });
+    } catch {
+      // skip nodes that fail to export (e.g. empty groups)
+    }
+  }
+  return images;
 }
 
 async function sendConfig() {
@@ -390,7 +464,12 @@ figma.ui.onmessage = async (msg: UIToMain) => {
       figma.notify(msg.message, { error: msg.error });
       break;
     case "resize":
-      figma.ui.resize(420, Math.max(320, Math.min(900, Math.round(msg.height))));
+      // Floor is just a sanity minimum (not a target) — the main view alone
+      // is well under 320px now that credentials moved to their own screen.
+      figma.ui.resize(420, Math.max(180, Math.min(900, Math.round(msg.height))));
+      break;
+    case "capture-screenshot":
+      post({ type: "screenshot", images: await captureScreenshot() });
       break;
     case "insert-frame":
       try {
